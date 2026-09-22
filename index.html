@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El viaje del Sol y la sombra</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Trebuchet MS", Arial, sans-serif;
+    background: #eef8ff;
+    color: #17324d;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .app {
+    width: min(1100px, 100%);
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    margin: 4px 0 8px;
+    font-size: clamp(26px, 4vw, 40px);
+  }
+  .subtitle {
+    text-align: center;
+    margin: 0 0 14px;
+    font-size: 18px;
+  }
+  .scene {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    min-height: 420px;
+    overflow: hidden;
+    border-radius: 24px;
+    border: 4px solid #17324d;
+    background: #78c9f5;
+  }
+  .sky {
+    position: absolute;
+    inset: 0 0 31% 0;
+    background: linear-gradient(to bottom, #63c5f4 0%, #a9e2fa 100%);
+    transition: background 0.35s ease;
+  }
+  .ground {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 31%;
+    background: #63ad55;
+    border-top: 5px solid #39763b;
+  }
+  .sun {
+    position: absolute;
+    width: 76px; height: 76px;
+    margin-left: -38px; margin-top: -38px;
+    border-radius: 50%;
+    background: #ffd447;
+    border: 4px solid #d88b19;
+    box-shadow: 0 0 0 9px rgba(255, 212, 71, .22);
+    transition: left .12s linear, top .12s linear;
+    z-index: 5;
+  }
+  .ray {
+    position: absolute;
+    height: 4px;
+    width: 25px;
+    background: #f5ad28;
+    border-radius: 4px;
+    z-index: 4;
+  }
+  .r1 { left:-34px; top: 36px; transform:rotate(0deg); }
+  .r2 { right:-34px; top: 36px; }
+  .r3 { left: 36px; top:-34px; transform:rotate(90deg); }
+  .r4 { left: 36px; bottom:-34px; transform:rotate(90deg); }
+
+  .pole-base {
+    position: absolute;
+    left: 50%;
+    bottom: 31%;
+    width: 16px;
+    height: 31%;
+    transform: translateX(-50%);
+    background: #6e452c;
+    border: 3px solid #4d2f20;
+    border-radius: 8px 8px 2px 2px;
+    z-index: 7;
+  }
+  .pole-cap {
+    position: absolute;
+    left: 50%;
+    bottom: calc(31% + 31% - 5px);
+    width: 28px; height: 28px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: #8a5a3a;
+    border: 3px solid #4d2f20;
+    z-index: 8;
+  }
+  .shadow {
+    position: absolute;
+    left: 50%;
+    bottom: 31%;
+    height: 13px;
+    transform-origin: 0 50%;
+    background: rgba(48, 54, 52, .55);
+    border-radius: 0 14px 14px 0;
+    z-index: 6;
+    transition: width .12s linear, transform .12s linear;
+  }
+  .label {
+    position: absolute;
+    padding: 7px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    border: 2px solid #17324d;
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 10;
+  }
+  #momentLabel { left: 18px; top: 16px; }
+  #shadowLabel { right: 18px; bottom: calc(31% + 16px); }
+
+  .controls {
+    margin-top: 15px;
+    padding: 16px 18px;
+    border-radius: 20px;
+    background: white;
+    border: 3px solid #17324d;
+  }
+  .time-row {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  #timeText {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  #momentText {
+    font-size: 19px;
+    font-weight: bold;
+    text-align: right;
+  }
+  input[type=range] {
+    width: 100%;
+    accent-color: #ef9d22;
+    cursor: pointer;
+    height: 36px;
+  }
+  .ticks {
+    display:flex;
+    justify-content:space-between;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: -4px;
+  }
+  .key {
+    display:flex;
+    justify-content:center;
+    gap: 18px;
+    flex-wrap:wrap;
+    margin-top: 14px;
+    font-size: 16px;
+  }
+  .dot {
+    display:inline-block;
+    width:15px;height:15px;border-radius:50%;
+    margin-right:6px; vertical-align:-1px;
+  }
+  .tip {
+    text-align:center;
+    margin: 13px 0 0;
+    font-size: 17px;
+  }
+  @media (max-width: 650px) {
+    .scene { min-height: 330px; }
+    .sun { width:58px;height:58px;margin-left:-29px;margin-top:-29px; }
+    .label { font-size:13px; padding:5px 8px; }
+    #shadowLabel { right:8px; }
+    #momentLabel { left:8px; top:8px; }
+    .pole-base { width:12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="scene" id="scene">
+    <div class="sky" id="sky"></div>
+    <div class="ground"></div>
+
+    <div class="sun" id="sun" aria-label="Sol">
+      <span class="ray r1"></span><span class="ray r2"></span>
+      <span class="ray r3"></span><span class="ray r4"></span>
+    </div>
+
+    <div class="shadow" id="shadow"></div>
+    <div class="pole-base" aria-label="Palo vertical"></div>
+    <div class="pole-cap"></div>
+
+    <div class="label" id="momentLabel">🌅 Amanecer</div>
+  </div>
+
+  <div class="controls">
+    <input id="slider" type="range" min="0" max="720" value="0" aria-label="Momento del día">
+    <div class="ticks">
+      <span>🌅 Amanecer</span>
+      <span>☀️ Mediodía</span>
+      <span>🌇 Atardecer</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const slider = document.getElementById("slider");
+const scene = document.getElementById("scene");
+const sun = document.getElementById("sun");
+const shadow = document.getElementById("shadow");
+const sky = document.getElementById("sky");
+const timeText = document.getElementById("timeText");
+const momentText = document.getElementById("momentText");
+const momentLabel = document.getElementById("momentLabel");
+const shadowLabel = document.getElementById("shadowLabel");
+const tip = document.getElementById("tip");
+
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+function update(){
+  const v = Number(slider.value) / 720;
+  const angle = Math.PI * v;
+
+  // Horizonte: 69% de la escena (parte superior del suelo).
+  // El Sol sale exactamente desde el horizonte y se pone exactamente en él.
+  const horizon = 69;
+  const x = 7 + 86 * v;
+  const y = horizon - 61 * Math.sin(angle);
+  sun.style.left = x + "%";
+  sun.style.top = y + "%";
+
+  // El Sol queda visible por encima del horizonte solamente mientras sin(angle)>0.
+  // En los extremos está centrado sobre la línea del horizonte, sin sombra.
+  const altitude = Math.sin(angle);
+  const aboveHorizon = altitude > 0.015;
+
+  if (!aboveHorizon) {
+    shadow.style.width = "0px";
+  } else {
+    // Sombra más larga con Sol bajo y más corta con Sol alto.
+    const sceneW = scene.clientWidth;
+    const shadowLength = Math.max(sceneW * 0.07, sceneW * (0.43 - 0.35 * altitude));
+    shadow.style.width = shadowLength + "px";
+
+    // Dirección física: la sombra se proyecta en sentido opuesto al Sol.
+    // Sol a la izquierda -> sombra a la derecha.
+    // Sol a la derecha -> sombra a la izquierda.
+    shadow.style.transform = `scaleX(${v < 0.5 ? 1 : -1})`;
+  }
+
+  // Cielo más anaranjado cerca del amanecer y del atardecer.
+  const edge = Math.max(0, 1 - Math.min(v, 1-v) * 10);
+  if (edge > 0) {
+    sky.style.background = `linear-gradient(to bottom,
+      rgb(${Math.round(99+100*edge)},${Math.round(197-55*edge)},${Math.round(244-95*edge)}) 0%,
+      rgb(${Math.round(169+60*edge)},${Math.round(226-75*edge)},${Math.round(250-95*edge)}) 100%)`;
+  } else {
+    sky.style.background = "linear-gradient(to bottom,#63c5f4,#a9e2fa)";
+  }
+}
+
+slider.addEventListener("input", update);
+window.addEventListener("resize", update);
+update();
+</script>
+</body>
+</html>
